@@ -25,12 +25,14 @@ function App() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showAutoEmailModal, setShowAutoEmailModal] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [emailPrompt, setEmailPrompt] = useState('');
   const [isSubmittingEmail, setIsSubmittingEmail] = useState(false);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const [isSecureConnection, setIsSecureConnection] = useState(false);
   const [emailCaptureResolver, setEmailCaptureResolver] = useState<((result: EmailCaptureResult) => void) | null>(null);
+  const [callStartTime, setCallStartTime] = useState<number | null>(null);
 
   // Memoized agent ID with validation
   const agentId = useMemo(() => {
@@ -87,10 +89,20 @@ function App() {
       console.log('🔗 Connected to Axie Studio AI');
       setIsSecureConnection(true);
       setConnectionAttempts(0);
+      setCallStartTime(Date.now());
+      
+      // Auto-trigger email popup after 3 seconds of being connected
+      setTimeout(() => {
+        console.log('🚀 Auto-triggering email popup during active call');
+        setShowAutoEmailModal(true);
+      }, 3000);
     }, []),
     onDisconnect: useCallback(() => {
       console.log('🔌 Disconnected from Axie Studio AI');
       setIsSecureConnection(false);
+      setCallStartTime(null);
+      setShowAutoEmailModal(false);
+      
       // Clean up any pending email capture
       if (emailCaptureResolver) {
         emailCaptureResolver({
@@ -250,6 +262,40 @@ function App() {
     setShowEmailModal(false);
   }, [emailCaptureResolver]);
 
+  // Handle auto email submission during call
+  const handleAutoEmailSubmit = useCallback(async (email: string) => {
+    console.log('📧 Auto email submitted during call:', email);
+    
+    // Send to webhook immediately
+    try {
+      const webhookUrl = `https://stefan0987.app.n8n.cloud/webhook/803738bb-c134-4bdb-9720-5b1af902475f?email=${encodeURIComponent(email)}`;
+      
+      const response = await fetch(webhookUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        console.log('✅ Auto email sent successfully to webhook during call');
+      } else {
+        console.error('❌ Auto webhook request failed:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Error sending auto email to webhook:', error);
+    }
+    
+    // Close auto modal
+    setShowAutoEmailModal(false);
+  }, []);
+
+  // Handle auto email close
+  const handleAutoEmailClose = useCallback(() => {
+    console.log('❌ Auto email popup closed during call');
+    setShowAutoEmailModal(false);
+  }, []);
+
   // Check initial permissions on mount
   useEffect(() => {
     const checkPermissions = async () => {
@@ -300,6 +346,15 @@ function App() {
         onClose={handleEmailClose}
         onSubmit={handleEmailSubmit}
         prompt={emailPrompt}
+      />
+
+      {/* Auto Email Popup During Call */}
+      <EmailPopup
+        isOpen={showAutoEmailModal}
+        onClose={handleAutoEmailClose}
+        onSubmit={handleAutoEmailSubmit}
+        prompt="You are currently in an active call. Please provide your email:"
+        autoTrigger={true}
       />
 
       {/* Enhanced Header with Security Indicator */}
