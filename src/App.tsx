@@ -27,7 +27,7 @@ function App() {
   const [emailPrompt, setEmailPrompt] = useState('');
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const [isSecureConnection, setIsSecureConnection] = useState(false);
-  const [emailResolver, setEmailResolver] = useState<((result: any) => void) | null>(null);
+  const [emailResolver, setEmailResolver] = useState<((result: EmailCaptureResult) => void) | null>(null);
 
   // Memoized agent ID with validation
   const agentId = useMemo(() => {
@@ -40,29 +40,26 @@ function App() {
     return id;
   }, []);
 
-  // Client tool function following ElevenLabs documentation
-  const captureEmail = useCallback((parameters: any) => {
-    console.log('📧 captureEmail tool triggered with parameters:', parameters);
+  // Properly configured email capture tool
+  const captureEmail = useCallback((parameters: EmailCaptureParams): Promise<EmailCaptureResult> => {
+    console.log('📧 capture_Email tool triggered with parameters:', parameters);
     
-    // Extract prompt from parameters
-    const prompt = parameters?.prompt || 'Please provide your email address to continue:';
-    
-    console.log('📧 Setting up email capture modal with prompt:', prompt);
-    setEmailPrompt(prompt);
-    setShowEmailModal(true);
-    setEmailInput('');
-    
-    // Return a promise that will be resolved when user submits email
     return new Promise((resolve) => {
+      const prompt = parameters?.prompt || 'Please provide your email address to continue:';
+      
+      console.log('📧 Setting up email capture modal with prompt:', prompt);
+      setEmailPrompt(prompt);
+      setShowEmailModal(true);
+      setEmailInput('');
       setEmailResolver(() => resolve);
       
       // Auto-timeout after 2 minutes for security
       const timeoutId = setTimeout(() => {
         console.log('⏰ Email capture timed out');
         resolve({
+          email: null,
           success: false,
-          message: 'Email capture timed out. Please try again.',
-          email: null
+          message: 'Email capture timed out. Please try again.'
         });
         setShowEmailModal(false);
         setEmailResolver(null);
@@ -75,7 +72,6 @@ function App() {
 
   // Enhanced conversation configuration with security and performance optimizations
   const conversation = useConversation({
-    apiKey: import.meta.env.VITE_ELEVENLABS_API_KEY,
     clientTools: {
       capture_Email: captureEmail
     },
@@ -217,20 +213,23 @@ function App() {
     
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const isValidEmail = emailRegex.test(email);
+    if (!emailRegex.test(email)) {
+      console.warn('⚠️ Invalid email format:', email);
+      // Still allow submission for testing - just warn
+      // return;
+    }
 
     console.log('📧 Email being submitted:', email);
     
     if (emailResolver) {
       console.log('✅ Resolving email capture with:', email);
       
-      // Return result in format expected by ElevenLabs
-      const result = {
-        success: true,
+      const result: EmailCaptureResult = {
         email: email,
+        success: true,
         message: isValidEmail 
-          ? `Email captured successfully: ${email}`
-          : `Email captured with format warning: ${email}`
+          ? `Email ${email} captured successfully.`
+          : `Email ${email} captured (format warning: please verify).`
       };
       
       emailResolver(result);
@@ -256,9 +255,9 @@ function App() {
     
     if (emailResolver) {
       emailResolver({
+        email: null,
         success: false,
-        message: 'Email capture cancelled by user.',
-        email: null
+        message: 'Email capture cancelled by user.'
       });
       setEmailResolver(null);
       
