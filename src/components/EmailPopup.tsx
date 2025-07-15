@@ -165,7 +165,7 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
                     {autoTrigger ? 'Processing Call...' : 'Submitting...'}
                   </>
                 ) : (
-                  {autoTrigger ? 'Continue Call' : 'Submit Email'}
+                  autoTrigger ? 'Continue Call' : 'Submit Email'
                 )}
               </button>
             </div>
