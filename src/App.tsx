@@ -15,9 +15,9 @@ interface EmailCaptureResult {
 
 // Constants for better performance
 const MODAL_ANIMATION_DURATION = 150; // Faster animation
-const CONNECTION_TIMEOUT = 10000;
+const CONNECTION_TIMEOUT = 8000;
 const RETRY_ATTEMPTS = 3;
-const EMAIL_CAPTURE_TIMEOUT = 30000; // Reduced from 60s to 30s
+const EMAIL_CAPTURE_TIMEOUT = 15000; // Reduced to 15s for immediate response
 
 function App() {
   // State management with proper typing
@@ -43,34 +43,34 @@ function App() {
   }, []);
 
   // Highly optimized email capture tool with immediate response
-  const emailCaptureTool = useCallback((parameters: EmailCaptureParams): Promise<EmailCaptureResult> => {
-    console.log('📧 Email capture tool triggered:', parameters);
+  const capture_Email = useCallback((): Promise<EmailCaptureResult> => {
+    console.log('📧 IMMEDIATE Email capture triggered for booking!');
     
     return new Promise((resolve) => {
-      const prompt = parameters?.prompt || 'Please enter your email address:';
+      // Immediate booking-focused prompt
+      const prompt = 'Enter your email to complete booking:';
       setEmailPrompt(prompt);
-      // Store the resolver immediately for faster access
+      
+      // Store resolver with immediate priority
       setEmailCaptureResolver(() => resolve);
       
-      // Pre-populate state for immediate UI response
+      // Immediate UI state setup
       setEmailInput('');
       setIsSubmittingEmail(false);
       
-      // Show modal with minimal delay
-      requestAnimationFrame(() => {
-        setShowEmailModal(true);
-      });
+      // Show modal IMMEDIATELY - no animation delay
+      setShowEmailModal(true);
       
-      // Reduced timeout for faster user experience
+      // Shorter timeout for booking urgency
       const timeoutId = setTimeout(() => {
-        console.warn('⏰ Email capture timed out');
+        console.warn('⏰ Booking email capture timed out - please try again');
         setEmailCaptureResolver(null);
         setShowEmailModal(false);
         setIsSubmittingEmail(false);
         resolve({
           email: null,
           success: false,
-          message: 'Email capture timed out. Please try again.'
+          message: 'Booking timeout - please restart booking process.'
         });
       }, EMAIL_CAPTURE_TIMEOUT);
       
@@ -87,7 +87,7 @@ function App() {
   // Enhanced conversation configuration with security and performance optimizations
   const conversation = useConversation({
     clientTools: {
-      capture_Email: emailCaptureTool
+      capture_Email: capture_Email
     },
     onConnect: useCallback(() => {
       console.log('🔗 Connected to Axie Studio AI');
@@ -102,7 +102,7 @@ function App() {
         emailCaptureResolver({
           email: null,
           success: false,
-          message: 'Connection lost during email capture.'
+          message: 'Connection lost during booking - please reconnect.'
         });
         setEmailCaptureResolver(null);
         setShowEmailModal(false);
@@ -123,7 +123,7 @@ function App() {
         }, 2000);
       }
     }, [connectionAttempts]),
-  }, [emailCaptureTool, emailCaptureResolver, connectionAttempts]);
+  }, [capture_Email, emailCaptureResolver, connectionAttempts]);
 
   // Optimized microphone permission request with better UX
   const requestMicrophonePermission = useCallback(async () => {
@@ -216,7 +216,7 @@ function App() {
     const email = emailInput.trim();
     
     if (!email) {
-      console.warn('⚠️ Email is empty');
+      console.warn('⚠️ Booking email is empty');
       return;
     }
     
@@ -226,51 +226,47 @@ function App() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isValidEmail = emailRegex.test(email);
     
-    if (!isValidEmail) {
-      console.warn('⚠️ Invalid email format:', email);
-    }
-
-    console.log('📧 Email being submitted:', email);
+    console.log('📧 BOOKING EMAIL being submitted immediately:', email);
     
-    // Use the stored resolver for immediate response
+    // IMMEDIATE resolver execution for booking
     if (emailCaptureResolver) {
-      console.log('✅ Resolving email capture immediately with:', email);
+      console.log('✅ IMMEDIATE booking email resolution:', email);
       
       const result = {
         email: email,
         success: true,
-        message: `Email ${email} captured successfully.`
+        message: `Booking email ${email} captured - proceeding with booking!`
       };
       
-      // Resolve immediately for faster agent response
+      // INSTANT resolution - no delays
       emailCaptureResolver(result);
       
-      // Clean up
+      // Immediate cleanup
       setEmailCaptureResolver(null);
       if ((window as any).emailCaptureCleanup) {
         (window as any).emailCaptureCleanup();
         delete (window as any).emailCaptureCleanup;
       }
     } else {
-      console.error('❌ No email capture resolver found');
+      console.error('❌ No booking email resolver found');
     }
     
-    // Close modal immediately for better UX
+    // INSTANT modal close for booking flow
     setShowEmailModal(false);
     setEmailInput('');
     setIsSubmittingEmail(false);
-    console.log('📧 Email modal closed, input cleared');
+    console.log('📧 Booking email submitted - modal closed instantly');
   }, [emailInput, isSubmittingEmail, emailCaptureResolver]);
 
   // Optimized email cancellation with immediate cleanup
   const handleEmailCancel = useCallback(() => {
-    console.log('❌ Email capture cancelled');
+    console.log('❌ Booking email capture cancelled');
     
     if (emailCaptureResolver) {
       emailCaptureResolver({
         email: null,
         success: false,
-        message: 'Email capture cancelled by user.'
+        message: 'Booking cancelled by user.'
       });
       setEmailCaptureResolver(null);
       
@@ -343,13 +339,12 @@ function App() {
       {/* Ultra-fast Email Modal with optimized animations */}
       {showEmailModal && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-150"
-          style={{ animationDuration: `${MODAL_ANIMATION_DURATION}ms` }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
         >
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-auto transform animate-in slide-in-from-bottom-4 duration-150">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-auto transform scale-100">
             <div className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-semibold text-black">Email Required</h2>
+                <h2 className="text-lg font-semibold text-black">Complete Booking</h2>
                 <button
                   onClick={handleEmailCancel}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -358,7 +353,7 @@ function App() {
                   <X size={20} />
                 </button>
               </div>
-              <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+              <p className="text-gray-600 text-sm mb-4 leading-relaxed font-medium">
                 {emailPrompt}
               </p>
               
@@ -368,7 +363,7 @@ function App() {
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   onKeyDown={handleEmailKeyPress}
-                  placeholder="your.email@example.com"
+                  placeholder="Enter email for booking..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-black focus:ring-1 focus:ring-black outline-none transition-all text-black placeholder-gray-400 text-sm disabled:opacity-50"
                   autoFocus
                   autoComplete="email"
@@ -378,7 +373,7 @@ function App() {
                 <div className="flex space-x-3">
                   <button
                     onClick={handleEmailCancel}
-                    className="flex-1 px-4 py-2 text-black bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                    className="flex-1 px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                     disabled={isSubmittingEmail}
                   >
                     Cancel
@@ -386,15 +381,15 @@ function App() {
                   <button
                     onClick={handleEmailSubmit}
                     disabled={!emailInput.trim() || isSubmittingEmail}
-                    className="flex-1 px-4 py-2 bg-black hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
+                    className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
                   >
                     {isSubmittingEmail ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        Sending...
+                        Booking...
                       </>
                     ) : (
-                      'Submit'
+                      'Complete Booking'
                     )}
                   </button>
                 </div>
