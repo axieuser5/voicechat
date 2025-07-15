@@ -6,13 +6,15 @@ interface EmailPopupProps {
   onClose: () => void;
   onSubmit: (email: string) => void;
   prompt?: string;
+  autoTrigger?: boolean;
 }
 
 const EmailPopup: React.FC<EmailPopupProps> = ({ 
   isOpen, 
   onClose, 
   onSubmit, 
-  prompt = "Enter your email to complete booking:" 
+  prompt = "Enter your email to complete booking:",
+  autoTrigger = false
 }) => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,7 +44,7 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
       // Send GET request to n8n webhook
       const webhookUrl = `https://stefan0987.app.n8n.cloud/webhook/803738bb-c134-4bdb-9720-5b1af902475f?email=${encodeURIComponent(trimmedEmail)}`;
       
-      console.log('📧 Sending email to webhook:', trimmedEmail);
+      console.log('📧 AUTO-TRIGGERING email to webhook during call:', trimmedEmail);
       
       const response = await fetch(webhookUrl, {
         method: 'GET',
@@ -52,7 +54,7 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
       });
 
       if (response.ok) {
-        console.log('✅ Email sent successfully to webhook');
+        console.log('✅ Email auto-sent successfully to webhook during active call');
         onSubmit(trimmedEmail);
         setEmail('');
       } else {
@@ -96,22 +98,29 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
             <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
               <Mail size={16} className="text-white" />
             </div>
-            <h2 className="text-lg font-semibold text-black">Email Required</h2>
+            <h2 className="text-lg font-semibold text-black">
+              {autoTrigger ? 'Call in Progress - Email Required' : 'Email Required'}
+            </h2>
           </div>
-          <button
-            onClick={handleClose}
-            disabled={isSubmitting}
-            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
-            aria-label="Close"
-          >
-            <X size={20} />
-          </button>
+          {!autoTrigger && (
+            <button
+              onClick={handleClose}
+              disabled={isSubmitting}
+              className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+          )}
         </div>
 
         {/* Content */}
         <div className="p-6">
           <p className="text-gray-700 text-sm mb-4 leading-relaxed">
-            {prompt}
+            {autoTrigger 
+              ? 'You are currently in an active call. Please provide your email to continue:' 
+              : prompt
+            }
           </p>
           
           <div className="space-y-4">
@@ -136,25 +145,27 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
             </div>
             
             <div className="flex space-x-3">
-              <button
-                onClick={handleClose}
-                disabled={isSubmitting}
-                className="flex-1 px-4 py-3 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
+              {!autoTrigger && (
+                <button
+                  onClick={handleClose}
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-3 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              )}
               <button
                 onClick={handleSubmit}
                 disabled={!email.trim() || isSubmitting}
-                className="flex-1 px-4 py-3 bg-black hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
+                className={`${autoTrigger ? 'w-full' : 'flex-1'} px-4 py-3 bg-black hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center`}
               >
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Submitting...
+                    {autoTrigger ? 'Processing Call...' : 'Submitting...'}
                   </>
                 ) : (
-                  'Submit Email'
+                  {autoTrigger ? 'Continue Call' : 'Submit Email'}
                 )}
               </button>
             </div>
