@@ -43,8 +43,9 @@ function App() {
   }, []);
 
   // Highly optimized email capture tool with immediate response
-  const emailCaptureTool = useCallback((parameters: EmailCaptureParams): Promise<EmailCaptureResult> => {
+  const emailCaptureTool = useCallback((parameters: EmailCaptureParams) => {
     console.log('📧 Email capture tool triggered:', parameters);
+    console.log('📧 Tool expects response:', true);
     
     return new Promise((resolve) => {
       const prompt = parameters?.prompt || 'Please enter your email address:';
@@ -64,14 +65,12 @@ function App() {
       // Reduced timeout for faster user experience
       const timeoutId = setTimeout(() => {
         console.warn('⏰ Email capture timed out');
+        console.log('📧 Sending timeout response to agent');
         setEmailCaptureResolver(null);
         setShowEmailModal(false);
         setIsSubmittingEmail(false);
-        resolve({
-          email: null,
-          success: false,
-          message: 'Email capture timed out. Please try again.'
-        });
+        // Return simple string response for agent
+        resolve('Email capture timed out. Please try again.');
       }, EMAIL_CAPTURE_TIMEOUT);
       
       // Store cleanup function
@@ -87,10 +86,11 @@ function App() {
   // Enhanced conversation configuration with security and performance optimizations
   const conversation = useConversation({
     clientTools: {
-      capture_Email: emailCaptureTool
+      capture_Email: emailCaptureTool,
     },
     onConnect: useCallback(() => {
       console.log('🔗 Connected to Axie Studio AI');
+      console.log('📧 Email capture tool registered and ready');
       setIsSecureConnection(true);
       setConnectionAttempts(0);
     }, []),
@@ -99,11 +99,9 @@ function App() {
       setIsSecureConnection(false);
       // Clean up any pending email capture
       if (emailCaptureResolver) {
-        emailCaptureResolver({
-          email: null,
-          success: false,
-          message: 'Connection lost during email capture.'
-        });
+        const response = 'Connection lost during email capture.';
+        console.log('📧 Sending disconnect response to agent:', response);
+        emailCaptureResolver(response);
         setEmailCaptureResolver(null);
         setShowEmailModal(false);
       }
@@ -236,14 +234,12 @@ function App() {
     if (emailCaptureResolver) {
       console.log('✅ Resolving email capture immediately with:', email);
       
-      const result = {
-        email: email,
-        success: true,
-        message: `Email ${email} captured successfully.`
-      };
+      // Return the email directly as a string for the agent
+      const response = `Email captured: ${email}`;
+      console.log('📧 Sending response to agent:', response);
       
       // Resolve immediately for faster agent response
-      emailCaptureResolver(result);
+      emailCaptureResolver(response);
       
       // Clean up
       setEmailCaptureResolver(null);
@@ -267,11 +263,9 @@ function App() {
     console.log('❌ Email capture cancelled');
     
     if (emailCaptureResolver) {
-      emailCaptureResolver({
-        email: null,
-        success: false,
-        message: 'Email capture cancelled by user.'
-      });
+      const response = 'Email capture cancelled by user.';
+      console.log('📧 Sending cancellation response to agent:', response);
+      emailCaptureResolver(response);
       setEmailCaptureResolver(null);
       
       if ((window as any).emailCaptureCleanup) {
