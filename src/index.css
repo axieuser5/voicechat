@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+}
+
+@layer base {
+  /* Ensure proper touch targets on mobile */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Improve text rendering on all devices */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Prevent zoom on input focus on iOS */
+  @media screen and (max-width: 767px) {
+    input, select, textarea {
+      font-size: 16px;
+    }
+  }
+}
+
+/* Custom responsive breakpoints for better control */
+@media (max-width: 374px) {
+  /* Extra small phones */
+  .gradient-orb {
+    width: 240px;
+    height: 240px;
+  }
+}
+
+@media (min-width: 375px) and (max-width: 639px) {
+  /* Standard mobile phones */
+  .gradient-orb {
+    width: 280px;
+    height: 280px;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  /* Large phones / small tablets */
+  .gradient-orb {
+    width: 320px;
+    height: 320px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Tablets */
+  .gradient-orb {
+    width: 360px;
+    height: 360px;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Desktop and larger */
+  .gradient-orb {
+    width: 400px;
+    height: 400px;
+  }
+}
