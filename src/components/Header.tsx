@@ -10,12 +10,19 @@ const Header: React.FC<HeaderProps> = ({ isConnected }) => {
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <img 
-            src="https://www.axiestudio.se/logo.jpg" 
-            alt="Axie Studio" 
-            className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-cover shadow-sm"
-            loading="eager"
-          />
+          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg overflow-hidden shadow-sm bg-gray-100 flex items-center justify-center">
+            <img 
+              src="https://www.axiestudio.se/logo.jpg" 
+              alt="Axie Studio" 
+              className="w-full h-full object-cover"
+              loading="eager"
+              onError={(e) => {
+                console.warn('Header logo failed to load');
+                e.currentTarget.style.display = 'none';
+              }}
+              onLoad={() => console.log('Header logo loaded successfully')}
+            />
+          </div>
           <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900">
             Axie Studio
           </h1>
