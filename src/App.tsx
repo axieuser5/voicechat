@@ -75,6 +75,7 @@ function App() {
 
   // Enhanced conversation configuration with security and performance optimizations
   const conversation = useConversation({
+    apiKey: import.meta.env.VITE_ELEVENLABS_API_KEY,
     clientTools: {
       capture_Email: captureEmail
     },
