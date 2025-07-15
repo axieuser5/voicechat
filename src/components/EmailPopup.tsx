@@ -26,14 +26,14 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
     const trimmedEmail = email.trim();
     
     if (!trimmedEmail) {
-      setError('Email is required');
+      setError('E-post krävs');
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
-      setError('Please enter a valid email address');
+      setError('Vänligen ange en giltig e-postadress');
       return;
     }
 
@@ -59,11 +59,11 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
         setEmail('');
       } else {
         console.error('❌ Webhook request failed:', response.status);
-        setError('Failed to submit email. Please try again.');
+        setError('Misslyckades att skicka e-post. Försök igen.');
       }
     } catch (error) {
       console.error('❌ Error sending email to webhook:', error);
-      setError('Network error. Please try again.');
+      setError('Nätverksfel. Försök igen.');
     } finally {
       setIsSubmitting(false);
     }
@@ -99,7 +99,7 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
               <Mail size={16} className="text-white" />
             </div>
             <h2 className="text-lg font-semibold text-black">
-              {autoTrigger ? 'Call in Progress - Email Required' : 'Email Required'}
+              {autoTrigger ? 'Pågående samtal - E-post krävs' : 'E-post krävs'}
             </h2>
           </div>
           {!autoTrigger && (
@@ -118,7 +118,7 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
         <div className="p-6">
           <p className="text-gray-700 text-sm mb-4 leading-relaxed">
             {autoTrigger 
-              ? 'You are currently in an active call. Please provide your email to continue:' 
+              ? 'Du är för närvarande i ett aktivt samtal. Vänligen ange din e-post för att fortsätta:' 
               : prompt
             }
           </p>
@@ -133,14 +133,20 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
                   if (error) setError('');
                 }}
                 onKeyDown={handleKeyPress}
-                placeholder="your@email.com"
+                placeholder="din@email.com"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-black focus:ring-1 focus:ring-black outline-none transition-all text-black placeholder-gray-400 disabled:opacity-50 disabled:bg-gray-50"
                 autoFocus
                 autoComplete="email"
                 disabled={isSubmitting}
               />
               {error && (
-                <p className="text-red-600 text-xs mt-2">{error}</p>
+                <p className="text-red-600 text-xs mt-2">
+                  {error === 'Email is required' ? 'E-post krävs' :
+                   error === 'Please enter a valid email address' ? 'Vänligen ange en giltig e-postadress' :
+                   error === 'Failed to submit email. Please try again.' ? 'Misslyckades att skicka e-post. Försök igen.' :
+                   error === 'Network error. Please try again.' ? 'Nätverksfel. Försök igen.' :
+                   error}
+                </p>
               )}
             </div>
             
@@ -151,7 +157,7 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
                   disabled={isSubmitting}
                   className="flex-1 px-4 py-3 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                 >
-                  Cancel
+                  Avbryt
                 </button>
               )}
               <button
@@ -162,10 +168,10 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    {autoTrigger ? 'Processing Call...' : 'Submitting...'}
+                    {autoTrigger ? 'Bearbetar samtal...' : 'Skickar...'}
                   </>
                 ) : (
-                  autoTrigger ? 'Continue Call' : 'Submit Email'
+                  autoTrigger ? 'Fortsätt samtal' : 'Skicka e-post'
                 )}
               </button>
             </div>
