@@ -27,7 +27,6 @@ function App() {
   const [emailPrompt, setEmailPrompt] = useState('');
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const [isSecureConnection, setIsSecureConnection] = useState(false);
-  const [emailResolver, setEmailResolver] = useState<((result: EmailCaptureResult) => void) | null>(null);
 
   // Memoized agent ID with validation
   const agentId = useMemo(() => {
@@ -40,40 +39,37 @@ function App() {
     return id;
   }, []);
 
-  // Properly configured email capture tool
-  const captureEmail = useCallback((parameters: EmailCaptureParams): Promise<EmailCaptureResult> => {
-    console.log('📧 capture_Email tool triggered with parameters:', parameters);
+  // Optimized email capture tool with better error handling
+  const emailCaptureResolver = useCallback((parameters: EmailCaptureParams): Promise<EmailCaptureResult> => {
+    console.log('📧 Email capture tool triggered:', parameters);
     
     return new Promise((resolve) => {
-      const prompt = parameters?.prompt || 'Please provide your email address to continue:';
-      
-      console.log('📧 Setting up email capture modal with prompt:', prompt);
+      const prompt = parameters?.prompt || 'Please enter your email address:';
       setEmailPrompt(prompt);
       setShowEmailModal(true);
       setEmailInput('');
-      setEmailResolver(() => resolve);
       
-      // Auto-timeout after 2 minutes for security
+      // Store resolver with timeout for security
       const timeoutId = setTimeout(() => {
-        console.log('⏰ Email capture timed out');
         resolve({
           email: null,
           success: false,
-          message: 'Email capture timed out. Please try again.'
+          message: 'Email capture timed out after 60 seconds.'
         });
         setShowEmailModal(false);
-        setEmailResolver(null);
-      }, 120000);
+      }, 60000);
 
-      // Store timeout ID for cleanup
-      (window as any).emailCaptureTimeout = timeoutId;
+      (window as any).emailCaptureResolve = (result: EmailCaptureResult) => {
+        clearTimeout(timeoutId);
+        resolve(result);
+      };
     });
   }, []);
 
   // Enhanced conversation configuration with security and performance optimizations
   const conversation = useConversation({
     clientTools: {
-      capture_Email: captureEmail
+      capture_Email: emailCaptureResolver
     },
     onConnect: useCallback(() => {
       console.log('🔗 Connected to Axie Studio AI');
@@ -83,15 +79,6 @@ function App() {
     onDisconnect: useCallback(() => {
       console.log('🔌 Disconnected from Axie Studio AI');
       setIsSecureConnection(false);
-      // Clean up any pending email capture
-      if (emailResolver) {
-        setShowEmailModal(false);
-        setEmailResolver(null);
-        if ((window as any).emailCaptureTimeout) {
-          clearTimeout((window as any).emailCaptureTimeout);
-          delete (window as any).emailCaptureTimeout;
-        }
-      }
     }, []),
     onMessage: useCallback((message) => {
       console.log('💬 Message received:', message);
@@ -108,7 +95,7 @@ function App() {
         }, 2000);
       }
     }, [connectionAttempts]),
-  }, [captureEmail, emailResolver, connectionAttempts]);
+  });
 
   // Optimized microphone permission request with better UX
   const requestMicrophonePermission = useCallback(async () => {
@@ -157,6 +144,7 @@ function App() {
     try {
       const sessionPromise = conversation.startSession({
         agentId: agentId,
+        connectionType: 'webrtc',
       });
 
       // Add timeout for connection
@@ -190,15 +178,6 @@ function App() {
     } finally {
       setIsSecureConnection(false);
       setConnectionAttempts(0);
-      // Clean up email capture if active
-      if (emailResolver) {
-        setShowEmailModal(false);
-        setEmailResolver(null);
-        if ((window as any).emailCaptureTimeout) {
-          clearTimeout((window as any).emailCaptureTimeout);
-          delete (window as any).emailCaptureTimeout;
-        }
-      }
     }
   }, [conversation]);
 
@@ -221,56 +200,39 @@ function App() {
 
     console.log('📧 Email being submitted:', email);
     
-    if (emailResolver) {
+    if ((window as any).emailCaptureResolve) {
       console.log('✅ Resolving email capture with:', email);
-      
-      const result: EmailCaptureResult = {
+      (window as any).emailCaptureResolve({
         email: email,
         success: true,
-        message: isValidEmail 
-          ? `Email ${email} captured successfully.`
-          : `Email ${email} captured (format warning: please verify).`
-      };
-      
-      emailResolver(result);
-      setEmailResolver(null);
-      
-      // Clear timeout
-      if ((window as any).emailCaptureTimeout) {
-        clearTimeout((window as any).emailCaptureTimeout);
-        delete (window as any).emailCaptureTimeout;
-      }
+        message: `Email ${email} captured successfully.`
+      });
+      delete (window as any).emailCaptureResolve;
     } else {
-      console.error('❌ No email resolver function found');
+      console.error('❌ No emailCaptureResolve function found');
     }
     
     setShowEmailModal(false);
     setEmailInput('');
     console.log('📧 Email modal closed, input cleared');
-  }, [emailInput, emailResolver]);
+  }, [emailInput]);
 
   // Optimized email cancellation
   const handleEmailCancel = useCallback(() => {
     console.log('❌ Email capture cancelled');
     
-    if (emailResolver) {
-      emailResolver({
+    if ((window as any).emailCaptureResolve) {
+      (window as any).emailCaptureResolve({
         email: null,
         success: false,
         message: 'Email capture cancelled by user.'
       });
-      setEmailResolver(null);
-      
-      // Clear timeout
-      if ((window as any).emailCaptureTimeout) {
-        clearTimeout((window as any).emailCaptureTimeout);
-        delete (window as any).emailCaptureTimeout;
-      }
+      delete (window as any).emailCaptureResolve;
     }
     
     setShowEmailModal(false);
     setEmailInput('');
-  }, [emailResolver]);
+  }, []);
 
   // Optimized keyboard handling
   const handleEmailKeyPress = useCallback((e: React.KeyboardEvent) => {
@@ -310,15 +272,6 @@ function App() {
     }
   }, []);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if ((window as any).emailCaptureTimeout) {
-        clearTimeout((window as any).emailCaptureTimeout);
-        delete (window as any).emailCaptureTimeout;
-      }
-    };
-  }, []);
   // Memoized connection status
   const connectionStatus = useMemo(() => {
     const isConnected = conversation.status === 'connected';
