@@ -76,7 +76,7 @@ function App() {
   // Enhanced conversation configuration with security and performance optimizations
   const conversation = useConversation({
     clientTools: {
-      captureEmail: captureEmail
+      capture_Email: captureEmail
     },
     onConnect: useCallback(() => {
       console.log('🔗 Connected to Axie Studio AI');
