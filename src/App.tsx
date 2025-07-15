@@ -1,15 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { useConversation } from '@elevenlabs/react';
-import { Mic, MicOff, Phone, PhoneOff } from 'lucide-react';
+import { Mic, MicOff, Phone, PhoneOff, Mail, X } from 'lucide-react';
 
 function App() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [emailPrompt, setEmailPrompt] = useState('');
 
   // Get agent ID from environment variable
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
 
   const conversation = useConversation({
+    clientTools: {
+      capture_Email: (parameters: any) => {
+        console.log('Email capture tool triggered with parameters:', parameters);
+        
+        // Extract prompt from parameters if provided
+        const prompt = parameters?.prompt || 'Please enter your email address:';
+        setEmailPrompt(prompt);
+        setShowEmailModal(true);
+        setEmailInput('');
+        
+        // Return a promise that resolves when email is submitted
+        return new Promise((resolve) => {
+          // Store the resolve function to call it later when email is submitted
+          (window as any).emailCaptureResolve = resolve;
+        });
+      }
+    },
     onConnect: () => {
       console.log('Connected to Axie Studio AI');
     },
@@ -65,6 +85,47 @@ function App() {
     }
   };
 
+  const handleEmailSubmit = () => {
+    if (emailInput.trim()) {
+      // Call the resolve function if it exists
+      if ((window as any).emailCaptureResolve) {
+        (window as any).emailCaptureResolve({
+          email: emailInput.trim(),
+          success: true,
+          message: `Email ${emailInput.trim()} has been captured successfully.`
+        });
+        delete (window as any).emailCaptureResolve;
+      }
+      
+      setShowEmailModal(false);
+      setEmailInput('');
+      console.log('Email captured:', emailInput.trim());
+    }
+  };
+
+  const handleEmailCancel = () => {
+    // Call the resolve function with cancellation info
+    if ((window as any).emailCaptureResolve) {
+      (window as any).emailCaptureResolve({
+        email: null,
+        success: false,
+        message: 'Email capture was cancelled by the user.'
+      });
+      delete (window as any).emailCaptureResolve;
+    }
+    
+    setShowEmailModal(false);
+    setEmailInput('');
+  };
+
+  const handleEmailKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleEmailSubmit();
+    } else if (e.key === 'Escape') {
+      handleEmailCancel();
+    }
+  };
+
   useEffect(() => {
     // Check initial microphone permission
     if (navigator.permissions) {
@@ -79,6 +140,71 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      {/* Email Capture Modal */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto transform transition-all">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Mail size={20} className="text-blue-600" />
+                </div>
+                <h2 className="text-lg font-semibold text-gray-900">Email Required</h2>
+              </div>
+              <button
+                onClick={handleEmailCancel}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <X size={16} className="text-gray-500" />
+              </button>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="p-6">
+              <p className="text-gray-600 mb-4 leading-relaxed">
+                {emailPrompt}
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    onKeyDown={handleEmailKeyPress}
+                    placeholder="your.email@example.com"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-gray-900 placeholder-gray-400"
+                    autoFocus
+                  />
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex space-x-3 pt-2">
+                  <button
+                    onClick={handleEmailCancel}
+                    className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleEmailSubmit}
+                    disabled={!emailInput.trim()}
+                    className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors"
+                  >
+                    Submit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header - Responsive */}
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-center sm:justify-start space-x-3">
