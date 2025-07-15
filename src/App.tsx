@@ -185,28 +185,38 @@ function App() {
   const handleEmailSubmit = useCallback(() => {
     const email = emailInput.trim();
     
-    if (!email) return;
+    if (!email) {
+      console.warn('⚠️ Email is empty');
+      return;
+    }
     
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      console.warn('⚠️ Invalid email format');
+      console.warn('⚠️ Invalid email format:', email);
+      // Still allow submission for testing - just warn
+      // return;
+    }
       return;
     }
 
-    console.log('📧 Email captured:', email);
+    console.log('📧 Email being submitted:', email);
     
     if ((window as any).emailCaptureResolve) {
+      console.log('✅ Resolving email capture with:', email);
       (window as any).emailCaptureResolve({
         email: email,
         success: true,
         message: `Email ${email} captured successfully.`
       });
       delete (window as any).emailCaptureResolve;
+    } else {
+      console.error('❌ No emailCaptureResolve function found');
     }
     
     setShowEmailModal(false);
     setEmailInput('');
+    console.log('📧 Email modal closed, input cleared');
   }, [emailInput]);
 
   // Optimized email cancellation
