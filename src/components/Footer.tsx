@@ -6,7 +6,7 @@ const Footer: React.FC = () => {
       <div className="flex items-center justify-center space-x-2 text-gray-500">
         <span className="text-xs sm:text-sm">Powered by</span>
         <img 
-          src="https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=16&h=16&fit=crop&crop=center" 
+          src="https://www.axiestudio.se/logo.jpg" 
           alt="Axie Studio" 
           className="w-3 h-3 sm:w-4 sm:h-4 rounded object-cover"
           loading="lazy"

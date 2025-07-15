@@ -11,7 +11,7 @@ const Header: React.FC<HeaderProps> = ({ isConnected }) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <img 
-            src="https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&fit=crop&crop=center" 
+            src="https://www.axiestudio.se/logo.jpg" 
             alt="Axie Studio" 
             className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-cover shadow-sm"
             loading="eager"
