@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useConversation } from '@elevenlabs/react';
 import { Mic, MicOff, Phone, PhoneOff, Mail, X, Shield } from 'lucide-react';
+import EmailPopup from './components/EmailPopup';
 
 // Types for better type safety
 interface EmailCaptureParams {
@@ -47,16 +48,11 @@ function App() {
     console.log('📧 IMMEDIATE Email capture triggered for booking!');
     
     return new Promise((resolve) => {
-      // Immediate booking-focused prompt
-      const prompt = 'Enter your email to complete booking:';
-      setEmailPrompt(prompt);
+      // Set booking-focused prompt
+      setEmailPrompt('Enter your email to complete booking:');
       
       // Store resolver with immediate priority
       setEmailCaptureResolver(() => resolve);
-      
-      // Immediate UI state setup
-      setEmailInput('');
-      setIsSubmittingEmail(false);
       
       // Show modal IMMEDIATELY - no animation delay
       setShowEmailModal(true);
@@ -66,7 +62,6 @@ function App() {
         console.warn('⏰ Booking email capture timed out - please try again');
         setEmailCaptureResolver(null);
         setShowEmailModal(false);
-        setIsSubmittingEmail(false);
         resolve({
           email: null,
           success: false,
@@ -79,7 +74,6 @@ function App() {
         clearTimeout(timeoutId);
         setEmailCaptureResolver(null);
         setShowEmailModal(false);
-        setIsSubmittingEmail(false);
       };
     });
   }, []);
@@ -209,40 +203,20 @@ function App() {
     }
   }, [conversation]);
 
-  // Highly optimized email submission with immediate feedback
-  const handleEmailSubmit = useCallback(() => {
-    if (isSubmittingEmail) return; // Prevent double submission
-    
-    const email = emailInput.trim();
-    
-    if (!email) {
-      console.warn('⚠️ Booking email is empty');
-      return;
-    }
-    
-    setIsSubmittingEmail(true);
-    
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const isValidEmail = emailRegex.test(email);
-    
-    console.log('📧 BOOKING EMAIL being submitted immediately:', email);
-    
-    // IMMEDIATE resolver execution for booking
+  // Handle email submission from popup
+  const handleEmailSubmit = useCallback((email: string) => {
+    console.log('📧 Email submitted from popup:', email);
+
     if (emailCaptureResolver) {
-      console.log('✅ IMMEDIATE booking email resolution:', email);
-      
       const result = {
         email: email,
         success: true,
         message: `Booking email ${email} captured - proceeding with booking!`
       };
       
-      // INSTANT resolution - no delays
       emailCaptureResolver(result);
-      
-      // Immediate cleanup
       setEmailCaptureResolver(null);
+      
       if ((window as any).emailCaptureCleanup) {
         (window as any).emailCaptureCleanup();
         delete (window as any).emailCaptureCleanup;
@@ -251,22 +225,19 @@ function App() {
       console.error('❌ No booking email resolver found');
     }
     
-    // INSTANT modal close for booking flow
+    // Close modal
     setShowEmailModal(false);
-    setEmailInput('');
-    setIsSubmittingEmail(false);
-    console.log('📧 Booking email submitted - modal closed instantly');
-  }, [emailInput, isSubmittingEmail, emailCaptureResolver]);
+  }, [emailCaptureResolver]);
 
-  // Optimized email cancellation with immediate cleanup
-  const handleEmailCancel = useCallback(() => {
-    console.log('❌ Booking email capture cancelled');
+  // Handle email popup close
+  const handleEmailClose = useCallback(() => {
+    console.log('❌ Email popup closed');
     
     if (emailCaptureResolver) {
       emailCaptureResolver({
         email: null,
         success: false,
-        message: 'Booking cancelled by user.'
+        message: 'Email capture cancelled by user.'
       });
       setEmailCaptureResolver(null);
       
@@ -277,20 +248,7 @@ function App() {
     }
     
     setShowEmailModal(false);
-    setEmailInput('');
-    setIsSubmittingEmail(false);
   }, [emailCaptureResolver]);
-
-  // Optimized keyboard handling
-  const handleEmailKeyPress = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleEmailSubmit();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      handleEmailCancel();
-    }
-  }, [handleEmailSubmit, handleEmailCancel]);
 
   // Check initial permissions on mount
   useEffect(() => {
@@ -336,68 +294,13 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Ultra-fast Email Modal with optimized animations */}
-      {showEmailModal && (
-        <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-        >
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-auto transform scale-100">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-semibold text-black">Complete Booking</h2>
-                <button
-                  onClick={handleEmailCancel}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                  aria-label="Close"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <p className="text-gray-600 text-sm mb-4 leading-relaxed font-medium">
-                {emailPrompt}
-              </p>
-              
-              <div className="space-y-4">
-                <input
-                  type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  onKeyDown={handleEmailKeyPress}
-                  placeholder="Enter email for booking..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-black focus:ring-1 focus:ring-black outline-none transition-all text-black placeholder-gray-400 text-sm disabled:opacity-50"
-                  autoFocus
-                  autoComplete="email"
-                  disabled={isSubmittingEmail}
-                />
-                
-                <div className="flex space-x-3">
-                  <button
-                    onClick={handleEmailCancel}
-                    className="flex-1 px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                    disabled={isSubmittingEmail}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleEmailSubmit}
-                    disabled={!emailInput.trim() || isSubmittingEmail}
-                    className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
-                  >
-                    {isSubmittingEmail ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        Booking...
-                      </>
-                    ) : (
-                      'Complete Booking'
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Email Popup Component */}
+      <EmailPopup
+        isOpen={showEmailModal}
+        onClose={handleEmailClose}
+        onSubmit={handleEmailSubmit}
+        prompt={emailPrompt}
+      />
 
       {/* Enhanced Header with Security Indicator */}
       <div className="p-4 sm:p-6 lg:p-8">
