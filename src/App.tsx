@@ -339,15 +339,22 @@ function App() {
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <img 
-              src="https://www.axiestudio.se/logo.jpg" 
-              alt="Axie Studio" 
-              className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-cover"
-              loading="eager"
-            />
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900">
-              Axie Studio
-            </h1>
+            <a 
+              href="https://www.axiestudio.se" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+            >
+              <img 
+                src="https://www.axiestudio.se/logo.jpg" 
+                alt="Axie Studio" 
+                className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-cover"
+                loading="eager"
+              />
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-900">
+                Axie Studio
+              </h1>
+            </a>
           </div>
           
           {/* Security Status Indicator */}
