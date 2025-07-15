@@ -197,8 +197,6 @@ function App() {
       // Still allow submission for testing - just warn
       // return;
     }
-      return;
-    }
 
     console.log('📧 Email being submitted:', email);
     
