@@ -83,12 +83,26 @@ VITE_ELEVENLABS_AGENT_ID=your_agent_id_here
 1. Create an account at [ElevenLabs](https://elevenlabs.io)
 2. Navigate to the Conversational AI section
 3. Create or select your AI agent
+4. **CRITICAL**: Configure your agent's system prompt to immediately trigger the `get_email` client tool:
+   ```
+   First Step! Always Trigger Client tool Every Time you get a Call! = get_email
+   ```
 4. Copy the agent ID to your `.env` file
 
 ### Webhook Configuration
-The application sends emails to an n8n webhook:
+The application sends emails to an n8n webhook using POST requests:
 ```
 https://stefan0987.app.n8n.cloud/webhook/803738bb-c134-4bdb-9720-5b1af902475f
+```
+
+**POST Request Format:**
+```json
+{
+  "email": "user@example.com",
+  "timestamp": "2025-01-27T10:30:00.000Z",
+  "source": "agent_triggered_get_email_tool",
+  "prompt": "AI Agent immediately requests your email:"
+}
 ```
 
 To modify the webhook URL, update the `webhookUrl` in both:
@@ -268,13 +282,21 @@ const conversation = useConversation({
 ```
 
 ### Client Tools
-The `get_email` tool allows the AI agent to request user email:
+The `get_email` tool is **immediately triggered** by the AI agent's system prompt on every call:
 
 ```typescript
 const get_email = (): Promise<EmailCaptureResult> => {
+  // Immediately shows email popup when agent connects
   // Returns: { email: string | null, success: boolean, message: string }
+  // Timeout: 1 second to match agent configuration
 };
 ```
+
+**Agent Configuration:**
+- Tool ID: `tool_01k09w8crpfptv8xc83mv4k2yy`
+- Response timeout: 1 second
+- Expects response: true
+- Triggered immediately on call start by system prompt
 
 ## 🐛 Troubleshooting
 

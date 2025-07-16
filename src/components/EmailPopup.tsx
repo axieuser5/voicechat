@@ -41,28 +41,34 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
     setError('');
 
     try {
-      // Send GET request to n8n webhook
-      const webhookUrl = `https://stefan0987.app.n8n.cloud/webhook/803738bb-c134-4bdb-9720-5b1af902475f?email=${encodeURIComponent(trimmedEmail)}`;
+      // Send POST request to n8n webhook
+      const webhookUrl = 'https://stefan0987.app.n8n.cloud/webhook/803738bb-c134-4bdb-9720-5b1af902475f';
       
-      console.log('📧 AUTO-TRIGGERING email to webhook during call:', trimmedEmail);
+      console.log('📧 Sending email via POST to webhook:', trimmedEmail);
       
       const response = await fetch(webhookUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          timestamp: new Date().toISOString(),
+          source: autoTrigger ? 'auto_popup_during_call' : 'agent_triggered_get_email_tool',
+          prompt: prompt
+        })
       });
 
       if (response.ok) {
-        console.log('✅ Email auto-sent successfully to webhook during active call');
+        console.log('✅ Email sent successfully via POST to webhook');
         onSubmit(trimmedEmail);
         setEmail('');
       } else {
-        console.error('❌ Webhook request failed:', response.status);
+        console.error('❌ Webhook POST request failed:', response.status);
         setError('Misslyckades att skicka e-post. Försök igen.');
       }
     } catch (error) {
-      console.error('❌ Error sending email to webhook:', error);
+      console.error('❌ Error sending email via POST to webhook:', error);
       setError('Nätverksfel. Försök igen.');
     } finally {
       setIsSubmitting(false);

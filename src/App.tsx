@@ -47,11 +47,11 @@ function App() {
 
   // Highly optimized email capture tool with immediate response
   const get_email = useCallback((): Promise<EmailCaptureResult> => {
-    console.log('📧 get_email client tool triggered by ElevenLabs agent!');
+    console.log('🚀 get_email client tool IMMEDIATELY triggered by ElevenLabs agent on call start!');
     
     return new Promise((resolve) => {
       // Set agent-focused prompt
-      setEmailPrompt('AI Agent requests your email:');
+      setEmailPrompt('AI Agent immediately requests your email:');
       
       // Store resolver with immediate priority
       setEmailCaptureResolver(() => resolve);
@@ -61,13 +61,13 @@ function App() {
       
       // Shorter timeout for booking urgency
       const timeoutId = setTimeout(() => {
-        console.warn('⏰ get_email tool timed out - agent will be notified');
+        console.warn('⏰ get_email tool timed out after 1 second - agent will be notified');
         setEmailCaptureResolver(null);
         setShowEmailModal(false);
         resolve({
           email: null,
           success: false,
-          message: 'Email capture timeout - please try again.'
+          message: 'Email capture timeout after 1 second - please try again.'
         });
       }, 1000); // Match your agent's 1 second timeout
       
@@ -87,15 +87,13 @@ function App() {
     },
     onConnect: useCallback(() => {
       console.log('🔗 Connected to Axie Studio AI');
+      console.log('🎯 Agent system prompt should IMMEDIATELY trigger get_email client tool!');
       setIsSecureConnection(true);
       setConnectionAttempts(0);
       setCallStartTime(Date.now());
       
-      // Auto-trigger email popup after 3 seconds of being connected
-      setTimeout(() => {
-        console.log('🚀 Auto-triggering email popup during active call');
-        setShowAutoEmailModal(true);
-      }, 3000);
+      // Remove auto-trigger since agent system prompt handles this immediately
+      console.log('✅ Waiting for agent system prompt to trigger get_email tool...');
     }, []),
     onDisconnect: useCallback(() => {
       console.log('🔌 Disconnected from Axie Studio AI');
@@ -266,24 +264,29 @@ function App() {
   const handleAutoEmailSubmit = useCallback(async (email: string) => {
     console.log('📧 Auto email submitted during call:', email);
     
-    // Send to webhook immediately
+    // Send to webhook immediately using POST
     try {
-      const webhookUrl = `https://stefan0987.app.n8n.cloud/webhook/803738bb-c134-4bdb-9720-5b1af902475f?email=${encodeURIComponent(email)}`;
+      const webhookUrl = 'https://stefan0987.app.n8n.cloud/webhook/803738bb-c134-4bdb-9720-5b1af902475f';
       
       const response = await fetch(webhookUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          email: email,
+          timestamp: new Date().toISOString(),
+          source: 'auto_popup_during_call'
+        })
       });
 
       if (response.ok) {
-        console.log('✅ Auto email sent successfully to webhook during call');
+        console.log('✅ Auto email sent successfully via POST to webhook during call');
       } else {
-        console.error('❌ Auto webhook request failed:', response.status);
+        console.error('❌ Auto webhook POST request failed:', response.status);
       }
     } catch (error) {
-      console.error('❌ Error sending auto email to webhook:', error);
+      console.error('❌ Error sending auto email via POST to webhook:', error);
     }
     
     // Close auto modal
