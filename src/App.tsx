@@ -128,8 +128,7 @@ function App() {
           console.log(`🔄 Retrying connection (${connectionAttempts + 1}/${RETRY_ATTEMPTS})`);
         }, 2000);
       }
-    }, [connectionAttempts]),
-  }, [capture_Email, emailCaptureResolver, connectionAttempts]);
+    }, [connectionAttempts])
   }, [get_email, emailCaptureResolver, connectionAttempts]);
 
   // Optimized microphone permission request with better UX
@@ -218,13 +217,13 @@ function App() {
 
   // Handle email submission from popup
   const handleEmailSubmit = useCallback((email: string) => {
-    console.log('📧 Email submitted to get_email tool:', email);
+    console.log('📧 Email submitted from popup:', email);
 
     if (emailCaptureResolver) {
       const result = {
         email: email,
         success: true,
-        message: `Email ${email} captured successfully for agent.`
+        message: `Booking email ${email} captured - proceeding with booking!`
       };
       
       emailCaptureResolver(result);
@@ -235,7 +234,7 @@ function App() {
         delete (window as any).emailCaptureCleanup;
       }
     } else {
-      console.error('❌ No get_email resolver found');
+      console.error('❌ No booking email resolver found');
     }
     
     // Close modal
@@ -244,13 +243,13 @@ function App() {
 
   // Handle email popup close
   const handleEmailClose = useCallback(() => {
-    console.log('❌ get_email popup closed by user');
+    console.log('❌ Email popup closed');
     
     if (emailCaptureResolver) {
       emailCaptureResolver({
         email: null,
         success: false,
-        message: 'User cancelled email input.'
+        message: 'Email capture cancelled by user.'
       });
       setEmailCaptureResolver(null);
       
