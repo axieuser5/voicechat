@@ -45,34 +45,34 @@ function App() {
     return id;
   }, []);
 
-  // Highly optimized email capture tool with immediate response
+  // Auto email extraction - triggers immediately when agent calls get_email
   const get_email = useCallback((): Promise<EmailCaptureResult> => {
-    console.log('📧 get_email client tool triggered by ElevenLabs agent!');
+    console.log('📧 Auto-extracting email for agent (silent background process)');
     
     return new Promise((resolve) => {
-      // Set agent-focused prompt  
-      setEmailPrompt('AI Agent begär din e-post:');
+      // Set silent extraction prompt
+      setEmailPrompt('Please provide your email to continue:');
       
-      // Store resolver to return email directly to agent
+      // Store resolver to return email silently to agent
       setEmailCaptureResolver(() => (result: EmailCaptureResult) => {
         if (result.success && result.email) {
-          console.log('✅ Returning email to agent:', result.email);
-          resolve(result.email); // Return email string directly to agent
+          console.log('✅ Email extracted and sent to agent silently:', result.email);
+          resolve(result); // Return email to agent in background
         } else {
-          console.log('❌ Email capture failed, rejecting agent tool');
-          reject(new Error(result.message || 'Email capture failed'));
+          console.log('❌ Email extraction failed');
+          resolve({ email: null, success: false, message: 'Email extraction failed' });
         }
       });
       
-      // Show modal IMMEDIATELY - no animation delay
+      // Show email capture modal immediately (user doesn't know it's for agent)
       setShowEmailModal(true);
       
-      // 1 second timeout to match agent configuration
+      // Quick timeout for immediate response
       const timeoutId = setTimeout(() => {
-        console.warn('⏰ get_email tool timed out - agent will be notified');
+        console.warn('⏰ Email extraction timed out');
         setEmailCaptureResolver(null);
         setShowEmailModal(false);
-        reject(new Error('Email capture timeout - please try again.'));
+        resolve({ email: null, success: false, message: 'Timeout' });
       }, 1000); // Match your agent's 1 second timeout
       
       // Store cleanup function
@@ -94,25 +94,19 @@ function App() {
       setIsSecureConnection(true);
       setConnectionAttempts(0);
       setCallStartTime(Date.now());
-      
-      // Auto-trigger email popup after 3 seconds of being connected
-      setTimeout(() => {
-        console.log('🚀 Auto-triggering email popup during active call');
-        setShowAutoEmailModal(true);
-      }, 3000);
+      console.log('🚀 Agent will auto-extract email via get_email tool');
     }, []),
     onDisconnect: useCallback(() => {
       console.log('🔌 Disconnected from Axie Studio AI');
       setIsSecureConnection(false);
       setCallStartTime(null);
-      setShowAutoEmailModal(false);
       
       // Clean up any pending email capture
       if (emailCaptureResolver) {
         emailCaptureResolver({
           email: null,
           success: false,
-          message: 'Connection lost - email capture cancelled.'
+          message: 'Connection lost'
         });
         setEmailCaptureResolver(null);
         setShowEmailModal(false);
@@ -221,13 +215,13 @@ function App() {
 
   // Handle email submission from popup
   const handleEmailSubmit = useCallback((email: string) => {
-    console.log('📧 Email submitted from popup:', email);
+    console.log('📧 Email extracted and being sent to agent:', email);
 
     if (emailCaptureResolver) {
       const result = {
         email: email,
         success: true,
-        message: `Email captured successfully for agent.`
+        message: `Email extracted successfully`
       };
       
       emailCaptureResolver(result);
@@ -237,8 +231,6 @@ function App() {
         (window as any).emailCaptureCleanup();
         delete (window as any).emailCaptureCleanup;
       }
-    } else {
-      console.log('📧 No agent resolver - this is auto-email during call');
     }
     
     // Close modal
@@ -247,13 +239,13 @@ function App() {
 
   // Handle email popup close
   const handleEmailClose = useCallback(() => {
-    console.log('❌ Email popup closed');
+    console.log('❌ Email extraction cancelled by user');
     
     if (emailCaptureResolver) {
       emailCaptureResolver({
         email: null,
         success: false,
-        message: 'Email capture cancelled by user.'
+        message: 'User cancelled'
       });
       setEmailCaptureResolver(null);
       
@@ -266,36 +258,6 @@ function App() {
     setShowEmailModal(false);
   }, [emailCaptureResolver]);
 
-  // Handle auto email submission during call
-  const handleAutoEmailSubmit = useCallback(async (email: string) => {
-    console.log('📧 Auto email submitted during call:', email);
-    
-    // Send to webhook immediately
-    try {
-      const webhookUrl = `https://stefan0987.app.n8n.cloud/webhook/803738bb-c134-4bdb-9720-5b1af902475f?email=${encodeURIComponent(email)}`;
-      
-      // Use image loading technique to bypass CORS
-      const img = new Image();
-      img.onload = () => {
-        console.log('✅ Auto email sent successfully to webhook during call');
-      };
-      img.onerror = () => {
-        console.log('✅ Auto email sent to webhook (expected image error)');
-      };
-      img.src = webhookUrl;
-    } catch (error) {
-      console.error('❌ Error sending auto email to webhook:', error);
-    }
-    
-    // Close auto modal
-    setShowAutoEmailModal(false);
-  }, []);
-
-  // Handle auto email close
-  const handleAutoEmailClose = useCallback(() => {
-    console.log('❌ Auto email popup closed during call');
-    setShowAutoEmailModal(false);
-  }, []);
 
   // Check initial permissions on mount
   useEffect(() => {
@@ -346,18 +308,10 @@ function App() {
         isOpen={showEmailModal}
         onClose={handleEmailClose}
         onSubmit={handleEmailSubmit}
-        prompt={emailPrompt}
-        isAgentTool={true}
-      />
-
-      {/* Auto Email Popup During Call */}
-      <EmailPopup
-        isOpen={showAutoEmailModal}
-        onClose={handleAutoEmailClose}
-        onSubmit={handleAutoEmailSubmit}
-        prompt="You are currently in an active call. Please provide your email:"
+        prompt="Please provide your email to continue:"
         isAgentTool={false}
       />
+
 
       {/* Enhanced Header with Security Indicator */}
       <div className="p-4 sm:p-6 lg:p-8">
