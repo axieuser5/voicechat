@@ -46,12 +46,12 @@ function App() {
   }, []);
 
   // Highly optimized email capture tool with immediate response
-  const capture_Email = useCallback((): Promise<EmailCaptureResult> => {
-    console.log('📧 IMMEDIATE Email capture triggered for booking!');
+  const get_email = useCallback((): Promise<EmailCaptureResult> => {
+    console.log('📧 get_email client tool triggered by ElevenLabs agent!');
     
     return new Promise((resolve) => {
-      // Set booking-focused prompt
-      setEmailPrompt('Enter your email to complete booking:');
+      // Set agent-focused prompt
+      setEmailPrompt('AI Agent requests your email:');
       
       // Store resolver with immediate priority
       setEmailCaptureResolver(() => resolve);
@@ -61,15 +61,15 @@ function App() {
       
       // Shorter timeout for booking urgency
       const timeoutId = setTimeout(() => {
-        console.warn('⏰ Booking email capture timed out - please try again');
+        console.warn('⏰ get_email tool timed out - agent will be notified');
         setEmailCaptureResolver(null);
         setShowEmailModal(false);
         resolve({
           email: null,
           success: false,
-          message: 'Booking timeout - please restart booking process.'
+          message: 'Email capture timeout - please try again.'
         });
-      }, EMAIL_CAPTURE_TIMEOUT);
+      }, 1000); // Match your agent's 1 second timeout
       
       // Store cleanup function
       (window as any).emailCaptureCleanup = () => {
@@ -83,7 +83,7 @@ function App() {
   // Enhanced conversation configuration with security and performance optimizations
   const conversation = useConversation({
     clientTools: {
-      capture_Email: capture_Email
+      get_email: get_email
     },
     onConnect: useCallback(() => {
       console.log('🔗 Connected to Axie Studio AI');
@@ -108,12 +108,12 @@ function App() {
         emailCaptureResolver({
           email: null,
           success: false,
-          message: 'Connection lost during booking - please reconnect.'
+          message: 'Connection lost - email capture cancelled.'
         });
         setEmailCaptureResolver(null);
         setShowEmailModal(false);
       }
-    }, []),
+    }, [emailCaptureResolver]),
     onMessage: useCallback((message) => {
       console.log('💬 Message received:', message);
     }, []),
@@ -130,6 +130,7 @@ function App() {
       }
     }, [connectionAttempts]),
   }, [capture_Email, emailCaptureResolver, connectionAttempts]);
+  }, [get_email, emailCaptureResolver, connectionAttempts]);
 
   // Optimized microphone permission request with better UX
   const requestMicrophonePermission = useCallback(async () => {
@@ -217,13 +218,13 @@ function App() {
 
   // Handle email submission from popup
   const handleEmailSubmit = useCallback((email: string) => {
-    console.log('📧 Email submitted from popup:', email);
+    console.log('📧 Email submitted to get_email tool:', email);
 
     if (emailCaptureResolver) {
       const result = {
         email: email,
         success: true,
-        message: `Booking email ${email} captured - proceeding with booking!`
+        message: `Email ${email} captured successfully for agent.`
       };
       
       emailCaptureResolver(result);
@@ -234,7 +235,7 @@ function App() {
         delete (window as any).emailCaptureCleanup;
       }
     } else {
-      console.error('❌ No booking email resolver found');
+      console.error('❌ No get_email resolver found');
     }
     
     // Close modal
@@ -243,13 +244,13 @@ function App() {
 
   // Handle email popup close
   const handleEmailClose = useCallback(() => {
-    console.log('❌ Email popup closed');
+    console.log('❌ get_email popup closed by user');
     
     if (emailCaptureResolver) {
       emailCaptureResolver({
         email: null,
         success: false,
-        message: 'Email capture cancelled by user.'
+        message: 'User cancelled email input.'
       });
       setEmailCaptureResolver(null);
       
