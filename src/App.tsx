@@ -50,25 +50,29 @@ function App() {
     console.log('📧 get_email client tool triggered by ElevenLabs agent!');
     
     return new Promise((resolve) => {
-      // Set agent-focused prompt
-      setEmailPrompt('AI Agent requests your email:');
+      // Set agent-focused prompt  
+      setEmailPrompt('AI Agent begär din e-post:');
       
-      // Store resolver with immediate priority
-      setEmailCaptureResolver(() => resolve);
+      // Store resolver to return email directly to agent
+      setEmailCaptureResolver(() => (result: EmailCaptureResult) => {
+        if (result.success && result.email) {
+          console.log('✅ Returning email to agent:', result.email);
+          resolve(result.email); // Return email string directly to agent
+        } else {
+          console.log('❌ Email capture failed, rejecting agent tool');
+          reject(new Error(result.message || 'Email capture failed'));
+        }
+      });
       
       // Show modal IMMEDIATELY - no animation delay
       setShowEmailModal(true);
       
-      // Shorter timeout for booking urgency
+      // 1 second timeout to match agent configuration
       const timeoutId = setTimeout(() => {
         console.warn('⏰ get_email tool timed out - agent will be notified');
         setEmailCaptureResolver(null);
         setShowEmailModal(false);
-        resolve({
-          email: null,
-          success: false,
-          message: 'Email capture timeout - please try again.'
-        });
+        reject(new Error('Email capture timeout - please try again.'));
       }, 1000); // Match your agent's 1 second timeout
       
       // Store cleanup function
@@ -217,13 +221,13 @@ function App() {
 
   // Handle email submission from popup
   const handleEmailSubmit = useCallback((email: string) => {
-    console.log('📧 Email submitted to get_email tool:', email);
+    console.log('📧 Email submitted from popup:', email);
 
     if (emailCaptureResolver) {
       const result = {
         email: email,
         success: true,
-        message: `Email ${email} captured successfully for agent.`
+        message: `Email captured successfully for agent.`
       };
       
       emailCaptureResolver(result);
@@ -234,7 +238,7 @@ function App() {
         delete (window as any).emailCaptureCleanup;
       }
     } else {
-      console.error('❌ No get_email resolver found');
+      console.log('📧 No agent resolver - this is auto-email during call');
     }
     
     // Close modal
@@ -343,6 +347,7 @@ function App() {
         onClose={handleEmailClose}
         onSubmit={handleEmailSubmit}
         prompt={emailPrompt}
+        isAgentTool={true}
       />
 
       {/* Auto Email Popup During Call */}
@@ -351,7 +356,7 @@ function App() {
         onClose={handleAutoEmailClose}
         onSubmit={handleAutoEmailSubmit}
         prompt="You are currently in an active call. Please provide your email:"
-        autoTrigger={true}
+        isAgentTool={false}
       />
 
       {/* Enhanced Header with Security Indicator */}
