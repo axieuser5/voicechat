@@ -61,15 +61,15 @@ function App() {
       
       // Shorter timeout for booking urgency
       const timeoutId = setTimeout(() => {
-        console.warn('⏰ get_email tool timed out after 1 second - agent will be notified');
+        console.warn('⏰ get_email tool timed out after 15 seconds - agent will be notified');
         setEmailCaptureResolver(null);
         setShowEmailModal(false);
         resolve({
           email: null,
           success: false,
-          message: 'Email capture timeout after 1 second - please try again.'
+          message: 'Email capture timeout after 15 seconds - please try again.'
         });
-      }, 1000); // Match your agent's 1 second timeout
+      }, 15000); // 15 seconds for user to enter email
       
       // Store cleanup function
       (window as any).emailCaptureCleanup = () => {
