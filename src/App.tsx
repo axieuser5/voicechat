@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useConversation } from '@elevenlabs/react';
 import { Mic, MicOff, Phone, PhoneOff, Mail, X, Shield } from 'lucide-react';
+import EmailPopup from './components/EmailPopup';
 
 // Types for better type safety
 interface EmailCaptureParams {
@@ -14,19 +15,24 @@ interface EmailCaptureResult {
 }
 
 // Constants for better performance
-const MODAL_ANIMATION_DURATION = 200;
-const CONNECTION_TIMEOUT = 10000;
+const MODAL_ANIMATION_DURATION = 150; // Faster animation
+const CONNECTION_TIMEOUT = 8000;
 const RETRY_ATTEMPTS = 3;
+const EMAIL_CAPTURE_TIMEOUT = 15000; // Reduced to 15s for immediate response
 
 function App() {
   // State management with proper typing
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showAutoEmailModal, setShowAutoEmailModal] = useState(false);
   const [emailInput, setEmailInput] = useState('');
   const [emailPrompt, setEmailPrompt] = useState('');
+  const [isSubmittingEmail, setIsSubmittingEmail] = useState(false);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const [isSecureConnection, setIsSecureConnection] = useState(false);
+  const [emailCaptureResolver, setEmailCaptureResolver] = useState<((result: EmailCaptureResult) => void) | null>(null);
+  const [callStartTime, setCallStartTime] = useState<number | null>(null);
 
   // Memoized agent ID with validation
   const agentId = useMemo(() => {
@@ -39,29 +45,37 @@ function App() {
     return id;
   }, []);
 
-  // Optimized email capture tool with better error handling
-  const emailCaptureResolver = useCallback((parameters: EmailCaptureParams): Promise<EmailCaptureResult> => {
-    console.log('📧 Email capture tool triggered:', parameters);
+  // Highly optimized email capture tool with immediate response
+  const capture_Email = useCallback((): Promise<EmailCaptureResult> => {
+    console.log('📧 IMMEDIATE Email capture triggered for booking!');
     
     return new Promise((resolve) => {
-      const prompt = parameters?.prompt || 'Please enter your email address:';
-      setEmailPrompt(prompt);
-      setShowEmailModal(true);
-      setEmailInput('');
+      // Set booking-focused prompt
+      setEmailPrompt('Enter your email to complete booking:');
       
-      // Store resolver with timeout for security
+      // Store resolver with immediate priority
+      setEmailCaptureResolver(() => resolve);
+      
+      // Show modal IMMEDIATELY - no animation delay
+      setShowEmailModal(true);
+      
+      // Shorter timeout for booking urgency
       const timeoutId = setTimeout(() => {
+        console.warn('⏰ Booking email capture timed out - please try again');
+        setEmailCaptureResolver(null);
+        setShowEmailModal(false);
         resolve({
           email: null,
           success: false,
-          message: 'Email capture timed out after 60 seconds.'
+          message: 'Booking timeout - please restart booking process.'
         });
-        setShowEmailModal(false);
-      }, 60000);
-
-      (window as any).emailCaptureResolve = (result: EmailCaptureResult) => {
+      }, EMAIL_CAPTURE_TIMEOUT);
+      
+      // Store cleanup function
+      (window as any).emailCaptureCleanup = () => {
         clearTimeout(timeoutId);
-        resolve(result);
+        setEmailCaptureResolver(null);
+        setShowEmailModal(false);
       };
     });
   }, []);
@@ -69,16 +83,36 @@ function App() {
   // Enhanced conversation configuration with security and performance optimizations
   const conversation = useConversation({
     clientTools: {
-      capture_Email: emailCaptureResolver
+      capture_Email: capture_Email
     },
     onConnect: useCallback(() => {
       console.log('🔗 Connected to Axie Studio AI');
       setIsSecureConnection(true);
       setConnectionAttempts(0);
+      setCallStartTime(Date.now());
+      
+      // Auto-trigger email popup after 3 seconds of being connected
+      setTimeout(() => {
+        console.log('🚀 Auto-triggering email popup during active call');
+        setShowAutoEmailModal(true);
+      }, 3000);
     }, []),
     onDisconnect: useCallback(() => {
       console.log('🔌 Disconnected from Axie Studio AI');
       setIsSecureConnection(false);
+      setCallStartTime(null);
+      setShowAutoEmailModal(false);
+      
+      // Clean up any pending email capture
+      if (emailCaptureResolver) {
+        emailCaptureResolver({
+          email: null,
+          success: false,
+          message: 'Connection lost during booking - please reconnect.'
+        });
+        setEmailCaptureResolver(null);
+        setShowEmailModal(false);
+      }
     }, []),
     onMessage: useCallback((message) => {
       console.log('💬 Message received:', message);
@@ -95,7 +129,7 @@ function App() {
         }, 2000);
       }
     }, [connectionAttempts]),
-  });
+  }, [capture_Email, emailCaptureResolver, connectionAttempts]);
 
   // Optimized microphone permission request with better UX
   const requestMicrophonePermission = useCallback(async () => {
@@ -181,69 +215,86 @@ function App() {
     }
   }, [conversation]);
 
-  // Optimized email submission with validation
-  const handleEmailSubmit = useCallback(() => {
-    const email = emailInput.trim();
-    
-    if (!email) {
-      console.warn('⚠️ Email is empty');
-      return;
-    }
-    
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      console.warn('⚠️ Invalid email format:', email);
-      // Still allow submission for testing - just warn
-      // return;
-    }
+  // Handle email submission from popup
+  const handleEmailSubmit = useCallback((email: string) => {
+    console.log('📧 Email submitted from popup:', email);
 
-    console.log('📧 Email being submitted:', email);
-    
-    if ((window as any).emailCaptureResolve) {
-      console.log('✅ Resolving email capture with:', email);
-      (window as any).emailCaptureResolve({
+    if (emailCaptureResolver) {
+      const result = {
         email: email,
         success: true,
-        message: `Email ${email} captured successfully.`
-      });
-      delete (window as any).emailCaptureResolve;
+        message: `Booking email ${email} captured - proceeding with booking!`
+      };
+      
+      emailCaptureResolver(result);
+      setEmailCaptureResolver(null);
+      
+      if ((window as any).emailCaptureCleanup) {
+        (window as any).emailCaptureCleanup();
+        delete (window as any).emailCaptureCleanup;
+      }
     } else {
-      console.error('❌ No emailCaptureResolve function found');
+      console.error('❌ No booking email resolver found');
     }
     
+    // Close modal
     setShowEmailModal(false);
-    setEmailInput('');
-    console.log('📧 Email modal closed, input cleared');
-  }, [emailInput]);
+  }, [emailCaptureResolver]);
 
-  // Optimized email cancellation
-  const handleEmailCancel = useCallback(() => {
-    console.log('❌ Email capture cancelled');
+  // Handle email popup close
+  const handleEmailClose = useCallback(() => {
+    console.log('❌ Email popup closed');
     
-    if ((window as any).emailCaptureResolve) {
-      (window as any).emailCaptureResolve({
+    if (emailCaptureResolver) {
+      emailCaptureResolver({
         email: null,
         success: false,
         message: 'Email capture cancelled by user.'
       });
-      delete (window as any).emailCaptureResolve;
+      setEmailCaptureResolver(null);
+      
+      if ((window as any).emailCaptureCleanup) {
+        (window as any).emailCaptureCleanup();
+        delete (window as any).emailCaptureCleanup;
+      }
     }
     
     setShowEmailModal(false);
-    setEmailInput('');
+  }, [emailCaptureResolver]);
+
+  // Handle auto email submission during call
+  const handleAutoEmailSubmit = useCallback(async (email: string) => {
+    console.log('📧 Auto email submitted during call:', email);
+    
+    // Send to webhook immediately
+    try {
+      const webhookUrl = `https://stefan0987.app.n8n.cloud/webhook/803738bb-c134-4bdb-9720-5b1af902475f?email=${encodeURIComponent(email)}`;
+      
+      const response = await fetch(webhookUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        console.log('✅ Auto email sent successfully to webhook during call');
+      } else {
+        console.error('❌ Auto webhook request failed:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Error sending auto email to webhook:', error);
+    }
+    
+    // Close auto modal
+    setShowAutoEmailModal(false);
   }, []);
 
-  // Optimized keyboard handling
-  const handleEmailKeyPress = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleEmailSubmit();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      handleEmailCancel();
-    }
-  }, [handleEmailSubmit, handleEmailCancel]);
+  // Handle auto email close
+  const handleAutoEmailClose = useCallback(() => {
+    console.log('❌ Auto email popup closed during call');
+    setShowAutoEmailModal(false);
+  }, []);
 
   // Check initial permissions on mount
   useEffect(() => {
@@ -289,51 +340,22 @@ function App() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Enhanced Email Modal with faster animations */}
-      {showEmailModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
-          style={{ animationDuration: `${MODAL_ANIMATION_DURATION}ms` }}
-        >
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-auto transform animate-in slide-in-from-bottom-4 duration-200">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold text-black mb-2">Email Required</h2>
-              <p className="text-gray-600 text-sm mb-4 leading-relaxed">
-                {emailPrompt}
-              </p>
-              
-              <div className="space-y-4">
-                <input
-                  type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  onKeyDown={handleEmailKeyPress}
-                  placeholder="your.email@example.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-black focus:ring-1 focus:ring-black outline-none transition-all text-black placeholder-gray-400 text-sm"
-                  autoFocus
-                  autoComplete="email"
-                />
-                
-                <div className="flex space-x-3">
-                  <button
-                    onClick={handleEmailCancel}
-                    className="flex-1 px-4 py-2 text-black bg-white border border-gray-300 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleEmailSubmit}
-                    disabled={!emailInput.trim()}
-                    className="flex-1 px-4 py-2 bg-black hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
-                  >
-                    Submit
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Email Popup Component */}
+      <EmailPopup
+        isOpen={showEmailModal}
+        onClose={handleEmailClose}
+        onSubmit={handleEmailSubmit}
+        prompt={emailPrompt}
+      />
+
+      {/* Auto Email Popup During Call */}
+      <EmailPopup
+        isOpen={showAutoEmailModal}
+        onClose={handleAutoEmailClose}
+        onSubmit={handleAutoEmailSubmit}
+        prompt="You are currently in an active call. Please provide your email:"
+        autoTrigger={true}
+      />
 
       {/* Enhanced Header with Security Indicator */}
       <div className="p-4 sm:p-6 lg:p-8">

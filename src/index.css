@@ -19,32 +19,11 @@
     animation-fill-mode: both;
   }
   
-  .fade-in {
-    animation: fadeIn 0.2s ease-out;
-  }
-  
-  .slide-in-from-bottom-4 {
-    animation: slideInFromBottom 0.2s ease-out;
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-  
-  @keyframes slideInFromBottom {
-    from {
-      opacity: 0;
-      transform: translateY(16px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  /* Immediate modal display - no animations for booking urgency */
+  .booking-modal {
+    opacity: 1;
+    transform: scale(1);
+    transition: none; /* No transitions for immediate display */
   }
 }
 
