@@ -217,13 +217,13 @@ function App() {
 
   // Handle email submission from popup
   const handleEmailSubmit = useCallback((email: string) => {
-    console.log('📧 Email submitted to get_email tool:', email);
+    console.log('📧 Email submitted from popup:', email);
 
     if (emailCaptureResolver) {
       const result = {
         email: email,
         success: true,
-        message: `Email ${email} captured successfully for agent.`
+        message: `Booking email ${email} captured - proceeding with booking!`
       };
       
       emailCaptureResolver(result);
@@ -234,7 +234,7 @@ function App() {
         delete (window as any).emailCaptureCleanup;
       }
     } else {
-      console.error('❌ No get_email resolver found');
+      console.error('❌ No booking email resolver found');
     }
     
     // Close modal
