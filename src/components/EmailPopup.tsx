@@ -105,7 +105,7 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
               <Mail size={16} className="text-white" />
             </div>
             <h2 className="text-lg font-semibold text-black">
-              {isAgentTool ? 'AI Agent begär din e-post' : 'E-post krävs'}
+              E-post krävs
             </h2>
           </div>
           {!isAgentTool && (
@@ -123,10 +123,7 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
         {/* Content */}
         <div className="p-6">
           <p className="text-gray-700 text-sm mb-4 leading-relaxed">
-            {isAgentTool 
-              ? 'AI-agenten behöver din e-postadress för att fortsätta samtalet:' 
-              : prompt
-            }
+            {prompt}
           </p>
           
           <div className="space-y-4">
