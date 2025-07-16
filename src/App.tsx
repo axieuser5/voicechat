@@ -243,13 +243,13 @@ function App() {
 
   // Handle email popup close
   const handleEmailClose = useCallback(() => {
-    console.log('❌ get_email popup closed by user');
+    console.log('❌ Email popup closed');
     
     if (emailCaptureResolver) {
       emailCaptureResolver({
         email: null,
         success: false,
-        message: 'User cancelled email input.'
+        message: 'Email capture cancelled by user.'
       });
       setEmailCaptureResolver(null);
       
