@@ -6,7 +6,7 @@ interface EmailPopupProps {
   onClose: () => void;
   onSubmit: (email: string) => void;
   prompt?: string;
-  isAgentTool?: boolean;
+  autoTrigger?: boolean;
 }
 
 const EmailPopup: React.FC<EmailPopupProps> = ({ 
@@ -14,7 +14,7 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
   onClose, 
   onSubmit, 
   prompt = "Enter your email to complete booking:",
-  isAgentTool = false
+  autoTrigger = false
 }) => {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -40,38 +40,32 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
     setIsSubmitting(true);
     setError('');
 
-    // For agent tool, return email directly without webhook
-    if (isAgentTool) {
-      console.log('📧 Returning email directly to agent:', trimmedEmail);
-      onSubmit(trimmedEmail);
-      setEmail('');
-      setIsSubmitting(false);
-    } else {
-      // For auto-trigger during call, still send to webhook
-      try {
-        const webhookUrl = `https://stefan0987.app.n8n.cloud/webhook/803738bb-c134-4bdb-9720-5b1af902475f?email=${encodeURIComponent(trimmedEmail)}`;
-        
-        console.log('📧 Sending email to webhook during call:', trimmedEmail);
-        
-        // Use image loading technique to bypass CORS
-        const img = new Image();
-        img.onload = () => {
-          console.log('✅ Email sent successfully to webhook during call');
-          onSubmit(trimmedEmail);
-          setEmail('');
-        };
-        img.onerror = () => {
-          console.log('✅ Email sent to webhook (expected image error)');
-          onSubmit(trimmedEmail);
-          setEmail('');
-        };
-        img.src = webhookUrl;
-      } catch (error) {
-        console.error('❌ Error sending email to webhook:', error);
-        setError('Nätverksfel. Försök igen.');
-      } finally {
-        setIsSubmitting(false);
+    try {
+      // Send GET request to n8n webhook
+      const webhookUrl = `https://stefan0987.app.n8n.cloud/webhook/803738bb-c134-4bdb-9720-5b1af902475f?email=${encodeURIComponent(trimmedEmail)}`;
+      
+      console.log('📧 AUTO-TRIGGERING email to webhook during call:', trimmedEmail);
+      
+      const response = await fetch(webhookUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        console.log('✅ Email auto-sent successfully to webhook during active call');
+        onSubmit(trimmedEmail);
+        setEmail('');
+      } else {
+        console.error('❌ Webhook request failed:', response.status);
+        setError('Misslyckades att skicka e-post. Försök igen.');
       }
+    } catch (error) {
+      console.error('❌ Error sending email to webhook:', error);
+      setError('Nätverksfel. Försök igen.');
+    } finally {
+      setIsSubmitting(false);
     }
   }, [email, isSubmitting, onSubmit]);
 
@@ -105,10 +99,10 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
               <Mail size={16} className="text-white" />
             </div>
             <h2 className="text-lg font-semibold text-black">
-              E-post krävs
+              {autoTrigger ? 'Pågående samtal - E-post krävs' : 'E-post krävs'}
             </h2>
           </div>
-          {!isAgentTool && (
+          {!autoTrigger && (
             <button
               onClick={handleClose}
               disabled={isSubmitting}
@@ -123,7 +117,10 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
         {/* Content */}
         <div className="p-6">
           <p className="text-gray-700 text-sm mb-4 leading-relaxed">
-            {prompt}
+            {autoTrigger 
+              ? 'Du är för närvarande i ett aktivt samtal. Vänligen ange din e-post för att fortsätta:' 
+              : prompt
+            }
           </p>
           
           <div className="space-y-4">
@@ -154,7 +151,7 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
             </div>
             
             <div className="flex space-x-3">
-              {!isAgentTool && (
+              {!autoTrigger && (
                 <button
                   onClick={handleClose}
                   disabled={isSubmitting}
@@ -166,15 +163,15 @@ const EmailPopup: React.FC<EmailPopupProps> = ({
               <button
                 onClick={handleSubmit}
                 disabled={!email.trim() || isSubmitting}
-                className={`${isAgentTool ? 'w-full' : 'flex-1'} px-4 py-3 bg-black hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center`}
+                className={`${autoTrigger ? 'w-full' : 'flex-1'} px-4 py-3 bg-black hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center`}
               >
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    {isAgentTool ? 'Skickar till agent...' : 'Skickar...'}
+                    {autoTrigger ? 'Bearbetar samtal...' : 'Skickar...'}
                   </>
                 ) : (
-                  isAgentTool ? 'Skicka till agent' : 'Skicka e-post'
+                  autoTrigger ? 'Fortsätt samtal' : 'Skicka e-post'
                 )}
               </button>
             </div>
